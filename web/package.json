@@ -12,8 +12,10 @@
   "dependencies": {
     "@marsidev/react-turnstile": "^1.6.3",
     "@tailwindcss/vite": "^4.3.4",
+    "@tanstack/react-query": "^5.106.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
+    "react-router-dom": "^7.18.5",
     "tailwindcss": "^4.3.4"
   },
   "devDependencies": {

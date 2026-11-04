@@ -1,5 +1,19 @@
 import { useEffect, useState } from 'react'
+import { NavLink, Route, Routes } from 'react-router-dom'
 import Login, { type Player } from './Login'
+import Standings from './pages/Standings'
+import Scoring from './pages/Scoring'
+
+const tabs = [
+  { to: '/', label: 'Info' },
+  { to: '/calendar', label: 'Calendar' },
+  { to: '/standings', label: 'Standings' },
+  { to: '/scoring', label: 'Scoring' },
+]
+
+const Soon = ({ name }: { name: string }) => (
+  <p className="text-emerald-800">{name} is coming in a later phase.</p>
+)
 
 export default function App() {
   const [player, setPlayer] = useState<Player | null>(null)
@@ -17,20 +31,46 @@ export default function App() {
     setPlayer(null)
   }
 
+  if (loading || !player) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-emerald-900 p-6 text-white">
+        {loading ? <p>Loading...</p> : <Login onLogin={setPlayer} />}
+      </main>
+    )
+  }
+
   return (
-    <main className="grid min-h-screen place-items-center bg-emerald-900 p-6 text-white">
-      {loading ? (
-        <p>Loading...</p>
-      ) : player ? (
-        <div className="text-center">
-          <h1 className="text-3xl font-bold">Welcome, {player.firstName}</h1>
-          <button onClick={logout} className="mt-4 underline text-emerald-200">
-            Not you? Switch player
-          </button>
-        </div>
-      ) : (
-        <Login onLogin={setPlayer} />
-      )}
-    </main>
+    <div className="min-h-screen bg-emerald-50 pb-20 text-emerald-950">
+      <header className="flex items-center justify-between bg-emerald-900 px-4 py-3 text-white">
+        <span className="font-bold">Mahjong League</span>
+        <button onClick={logout} className="text-sm text-emerald-200 underline">
+          {player.firstName} · switch
+        </button>
+      </header>
+      <div className="mx-auto max-w-2xl p-4">
+        <Routes>
+          <Route path="/" element={<Soon name="Rules & Info" />} />
+          <Route path="/calendar" element={<Soon name="The calendar" />} />
+          <Route path="/standings" element={<Standings />} />
+          <Route path="/scoring" element={<Scoring me={player} />} />
+        </Routes>
+      </div>
+      <nav className="fixed inset-x-0 bottom-0 grid grid-cols-4 border-t border-emerald-200 bg-white">
+        {tabs.map((t) => (
+          <NavLink
+            key={t.to}
+            to={t.to}
+            end
+            className={({ isActive }) =>
+              `p-3 text-center text-sm font-semibold ${
+                isActive ? 'bg-emerald-100 text-emerald-900' : 'text-slate-500'
+              }`
+            }
+          >
+            {t.label}
+          </NavLink>
+        ))}
+      </nav>
+    </div>
   )
 }
