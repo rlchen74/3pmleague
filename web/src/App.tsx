@@ -1,21 +1,36 @@
 import { useEffect, useState } from 'react'
+import Login, { type Player } from './Login'
 
 export default function App() {
-  const [status, setStatus] = useState('checking the API...')
+  const [player, setPlayer] = useState<Player | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/health')
+    fetch('/api/me')
       .then((r) => r.json())
-      .then((d) => setStatus(`API is up (${d.time})`))
-      .catch(() => setStatus('API not reachable'))
+      .then((d) => setPlayer(d.player))
+      .finally(() => setLoading(false))
   }, [])
 
+  async function logout() {
+    await fetch('/api/logout', { method: 'POST' })
+    setPlayer(null)
+  }
+
   return (
-    <main className="min-h-screen grid place-items-center bg-emerald-900 p-6 text-white">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold">Mahjong League</h1>
-        <p className="mt-2 text-emerald-200">{status}</p>
-      </div>
+    <main className="grid min-h-screen place-items-center bg-emerald-900 p-6 text-white">
+      {loading ? (
+        <p>Loading...</p>
+      ) : player ? (
+        <div className="text-center">
+          <h1 className="text-3xl font-bold">Welcome, {player.firstName}</h1>
+          <button onClick={logout} className="mt-4 underline text-emerald-200">
+            Not you? Switch player
+          </button>
+        </div>
+      ) : (
+        <Login onLogin={setPlayer} />
+      )}
     </main>
   )
 }
