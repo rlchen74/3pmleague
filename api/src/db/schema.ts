@@ -38,3 +38,15 @@ export const gameResults = pgTable(
   },
   (t) => [unique().on(t.gameId, t.playerId)],
 )
+
+export const availability = pgTable(
+  'availability',
+  {
+    id: serial('id').primaryKey(),
+    playerId: integer('player_id')
+      .notNull()
+      .references(() => players.id, { onDelete: 'cascade' }),
+    day: date('day').notNull(),
+  },
+  (t) => [unique().on(t.playerId, t.day)],
+)

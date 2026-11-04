@@ -1,4 +1,5 @@
 import 'dotenv/config'
+import { router as availabilityRouter } from './availability.js'
 import express from 'express'
 import cookieParser from 'cookie-parser'
 import rateLimit from 'express-rate-limit'
@@ -89,6 +90,7 @@ app.post('/api/logout', (_req, res) => {
 })
 
 app.use('/api', gamesRouter)
+app.use('/api', availabilityRouter)
 
 const port = Number(process.env.PORT) || 3001
 app.listen(port, () => {

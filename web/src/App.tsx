@@ -3,6 +3,7 @@ import { NavLink, Route, Routes } from 'react-router-dom'
 import Login, { type Player } from './Login'
 import Standings from './pages/Standings'
 import Scoring from './pages/Scoring'
+import Calendar from './pages/Calendar'
 
 const tabs = [
   { to: '/', label: 'Info' },
@@ -50,7 +51,7 @@ export default function App() {
       <div className="mx-auto max-w-2xl p-4">
         <Routes>
           <Route path="/" element={<Soon name="Rules & Info" />} />
-          <Route path="/calendar" element={<Soon name="The calendar" />} />
+          <Route path="/calendar" element={<Calendar me={player} />} />
           <Route path="/standings" element={<Standings />} />
           <Route path="/scoring" element={<Scoring me={player} />} />
         </Routes>

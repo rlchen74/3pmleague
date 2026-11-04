@@ -9,7 +9,7 @@ export const router = Router()
 // Flip to true if your league's scores in a game always add up to zero
 const REQUIRE_ZERO_SUM = false
 
-const requireLogin: RequestHandler = (req, res, next) => {
+export const requireLogin: RequestHandler = (req, res, next) => {
   const id = Number(req.signedCookies.player_id)
   if (!id) return void res.status(401).json({ error: 'Pick your name first' })
   res.locals.playerId = id
