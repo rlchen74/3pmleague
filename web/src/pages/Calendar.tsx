@@ -5,6 +5,7 @@ import type { Player } from '../Login'
 import SuggestedTables from './SuggestedTables'
 
 type Slot = { playerId: number; firstName: string; day: string }
+type CalEvent = { id: number; day: string; title: string; createdBy: number; firstName: string }
 
 // Dates are handled as plain "YYYY-MM-DD" strings to avoid timezone bugs
 const iso = (d: Date) => d.toLocaleDateString('en-CA')
@@ -24,6 +25,9 @@ const MAX_WEEK = 8
 export default function Calendar({ me }: { me: Player }) {
   const qc = useQueryClient()
   const [week, setWeek] = useState(0)
+  const [adding, setAdding] = useState<string | null>(null)
+  const [title, setTitle] = useState('')
+  const [error, setError] = useState('')
 
   const now = new Date()
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -34,6 +38,10 @@ export default function Calendar({ me }: { me: Player }) {
   const { data: slots = [], isLoading } = useQuery({
     queryKey: ['availability'],
     queryFn: () => api<Slot[]>('/api/availability'),
+  })
+  const { data: events = [] } = useQuery({
+    queryKey: ['events'],
+    queryFn: () => api<CalEvent[]>('/api/events'),
   })
 
   const toggle = useMutation({
@@ -61,6 +69,28 @@ export default function Calendar({ me }: { me: Player }) {
     },
   })
 
+  const addEvent = useMutation({
+    mutationFn: (v: { day: string; title: string }) =>
+      api('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(v),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['events'] })
+      setAdding(null)
+      setTitle('')
+      setError('')
+    },
+    onError: (e: Error) => setError(e.message),
+  })
+
+  const removeEvent = useMutation({
+    mutationFn: (id: number) => api(`/api/events/${id}`, { method: 'DELETE' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['events'] }),
+    onError: (e: Error) => setError(e.message),
+  })
+
   const label = (d: Date, opts: Intl.DateTimeFormatOptions) =>
     d.toLocaleDateString('en-US', opts)
 
@@ -71,7 +101,7 @@ export default function Calendar({ me }: { me: Player }) {
         Tap the days you're free. See who else is free and message them to set up a table.
       </p>
 
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between">
         <button
           onClick={() => setWeek((w) => w - 1)}
           disabled={week === 0}
@@ -92,12 +122,16 @@ export default function Calendar({ me }: { me: Player }) {
         </button>
       </div>
 
+      <SuggestedTables weekStart={iso(weekStart)} me={me} />
+
+      {error && <p className="mb-2 text-sm text-red-700">{error}</p>}
       {isLoading && <p>Loading availability...</p>}
 
       {days.map((d) => {
         const key = iso(d)
         const out = d < today || d > lastDay
         const free = slots.filter((s) => s.day === key)
+        const dayEvents = events.filter((e) => e.day === key)
         const mine = free.some((s) => s.playerId === me.id)
         const tables = Math.floor(free.length / 4)
         return (
@@ -119,9 +153,31 @@ export default function Calendar({ me }: { me: Player }) {
                   : `${free.length} free`}
               </span>
             </div>
-            <p className="mt-1 min-h-5 text-sm text-slate-700">
+
+            {dayEvents.map((e) => (
+              <div
+                key={e.id}
+                className="mt-2 flex items-center justify-between rounded-md bg-amber-100 px-2 py-1 text-sm text-amber-950"
+              >
+                <span>
+                  <b>{e.title}</b> · {e.firstName}
+                </span>
+                {(e.createdBy === me.id || me.isAdmin) && (
+                  <button
+                    onClick={() => removeEvent.mutate(e.id)}
+                    aria-label="Remove event"
+                    className="ml-2 font-bold"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
+
+            <p className="mt-2 min-h-5 text-sm text-slate-700">
               {free.length ? free.map((s) => s.firstName).join(', ') : 'Nobody yet'}
             </p>
+
             <button
               disabled={out}
               onClick={() => toggle.mutate({ day: key, available: !mine })}
@@ -133,10 +189,57 @@ export default function Calendar({ me }: { me: Player }) {
             >
               {mine ? "✓ I'm free (tap to undo)" : "I'm free"}
             </button>
+
+            {!out &&
+              (adding === key ? (
+                <div className="mt-2">
+                  <input
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    maxLength={80}
+                    placeholder="e.g. Hosting at my place, 7pm"
+                    className="w-full rounded-lg border border-emerald-300 p-2 text-sm"
+                  />
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      onClick={() => setTitle('Hosting')}
+                      className="rounded-lg border border-amber-300 px-3 py-1 text-xs"
+                    >
+                      🏠 Hosting
+                    </button>
+                    <button
+                      onClick={() => addEvent.mutate({ day: key, title })}
+                      disabled={!title.trim() || addEvent.isPending}
+                      className="ml-auto rounded-lg bg-amber-600 px-3 py-1 text-sm font-semibold text-white disabled:opacity-40"
+                    >
+                      Add
+                    </button>
+                    <button
+                      onClick={() => {
+                        setAdding(null)
+                        setTitle('')
+                      }}
+                      className="rounded-lg px-3 py-1 text-sm"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    setAdding(key)
+                    setTitle('')
+                    setError('')
+                  }}
+                  className="mt-2 text-sm text-amber-800 underline"
+                >
+                  + Add an event
+                </button>
+              ))}
           </div>
         )
       })}
-      <SuggestedTables weekStart={iso(weekStart)} me={me} />
     </div>
   )
 }

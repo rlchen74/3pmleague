@@ -24,7 +24,7 @@ export default function SuggestedTables({ weekStart, me }: { weekStart: string; 
     })
 
   return (
-    <section className="mt-6">
+    <section className="mb-5">
       <h2 className="text-xl font-bold">Suggested tables</h2>
       <p className="mb-3 text-sm text-slate-600">
         Based on who's free and who you've already played. These are suggestions, so

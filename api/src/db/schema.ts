@@ -50,3 +50,13 @@ export const availability = pgTable(
   },
   (t) => [unique().on(t.playerId, t.day)],
 )
+
+export const events = pgTable('events', {
+  id: serial('id').primaryKey(),
+  day: date('day').notNull(),
+  title: text('title').notNull(),
+  createdBy: integer('created_by')
+    .notNull()
+    .references(() => players.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
