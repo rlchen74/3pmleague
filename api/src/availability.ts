@@ -11,10 +11,10 @@ export const router = Router()
 const LEAGUE_TZ = 'America/Chicago'
 const WINDOW_DAYS = 62
 
-const todayStr = () =>
+export const todayStr = () =>
   new Date().toLocaleDateString('en-CA', { timeZone: LEAGUE_TZ })
 
-function addDays(iso: string, n: number) {
+export function addDays(iso: string, n: number) {
   const d = new Date(`${iso}T12:00:00Z`)
   d.setUTCDate(d.getUTCDate() + n)
   return d.toISOString().slice(0, 10)

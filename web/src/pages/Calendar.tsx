@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api'
 import type { Player } from '../Login'
+import SuggestedTables from './SuggestedTables'
 
 type Slot = { playerId: number; firstName: string; day: string }
 
@@ -54,7 +55,10 @@ export default function Calendar({ me }: { me: Player }) {
       return { previous }
     },
     onError: (_e, _v, ctx) => qc.setQueryData(['availability'], ctx?.previous),
-    onSettled: () => qc.invalidateQueries({ queryKey: ['availability'] }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['availability'] })
+      qc.invalidateQueries({ queryKey: ['pairings'] })
+    },
   })
 
   const label = (d: Date, opts: Intl.DateTimeFormatOptions) =>
@@ -132,6 +136,7 @@ export default function Calendar({ me }: { me: Player }) {
           </div>
         )
       })}
+      <SuggestedTables weekStart={iso(weekStart)} me={me} />
     </div>
   )
 }
