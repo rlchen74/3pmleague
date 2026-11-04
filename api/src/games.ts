@@ -43,6 +43,7 @@ router.get('/standings', requireLogin, async (_req, res) => {
     .select({
       id: players.id,
       firstName: players.firstName,
+      tile: players.tile,
       games: count(gameResults.id),
       points: sql<number>`coalesce(sum(${gameResults.score}), 0)`.mapWith(Number),
       wins: sql<number>`coalesce(sum(${gameResults.wins}), 0)`.mapWith(Number),
@@ -56,7 +57,7 @@ router.get('/standings', requireLogin, async (_req, res) => {
         eq(gameResults.countsTowardStandings, true),
       ),
     )
-    .groupBy(players.id, players.firstName)
+    .groupBy(players.id, players.firstName, players.tile)
   rows.sort((a, b) => b.points - a.points || a.firstName.localeCompare(b.firstName))
   res.json(rows)
 })

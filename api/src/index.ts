@@ -10,6 +10,8 @@ import { players } from './db/schema.js'
 import { router as gamesRouter } from './games.js'
 import { router as pairingsRouter } from './pairings.js'
 import { router as eventsRouter } from './events.js'
+import { router as pollsRouter } from './polls.js'
+import { router as profileRouter } from './profile.js'
 
 const sessionSecret = process.env.SESSION_SECRET
 const turnstileSecret = process.env.TURNSTILE_SECRET_KEY
@@ -95,6 +97,8 @@ app.use('/api', gamesRouter)
 app.use('/api', availabilityRouter)
 app.use('/api', pairingsRouter)
 app.use('/api', eventsRouter)
+app.use('/api', pollsRouter)
+app.use('/api', profileRouter)
 
 const port = Number(process.env.PORT) || 3001
 app.listen(port, () => {

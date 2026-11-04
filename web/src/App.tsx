@@ -4,6 +4,8 @@ import Login, { type Player } from './Login'
 import Standings from './pages/Standings'
 import Scoring from './pages/Scoring'
 import Calendar from './pages/Calendar'
+import Info from './pages/Info'
+import { Tile } from './tiles'
 
 const tabs = [
   { to: '/', label: 'Info' },
@@ -11,10 +13,6 @@ const tabs = [
   { to: '/standings', label: 'Standings' },
   { to: '/scoring', label: 'Scoring' },
 ]
-
-const Soon = ({ name }: { name: string }) => (
-  <p className="text-emerald-800">{name} is coming in a later phase.</p>
-)
 
 export default function App() {
   const [player, setPlayer] = useState<Player | null>(null)
@@ -45,15 +43,16 @@ export default function App() {
       <header className="flex items-center justify-between bg-emerald-900 px-4 py-3 text-white">
         <span className="font-bold">Mahjong League</span>
         <button onClick={logout} className="text-sm text-emerald-200 underline">
-          {player.firstName} · switch
+          {player.tile && <Tile t={player.tile} />} {player.firstName} · switch
         </button>
       </header>
       <div className="mx-auto max-w-2xl p-4">
         <Routes>
-          <Route path="/" element={<Soon name="Rules & Info" />} />
+          <Route path="/" element={<Info me={player} onUpdate={setPlayer} />} />
           <Route path="/calendar" element={<Calendar me={player} />} />
           <Route path="/standings" element={<Standings />} />
           <Route path="/scoring" element={<Scoring me={player} />} />
+          
         </Routes>
       </div>
       <nav className="fixed inset-x-0 bottom-0 grid grid-cols-4 border-t border-emerald-200 bg-white">

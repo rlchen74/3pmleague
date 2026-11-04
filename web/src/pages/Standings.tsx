@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api'
+import { Tile } from '../tiles'
 
 interface Row {
   id: number
+  tile: string | null
   firstName: string
   games: number
   points: number
@@ -39,7 +41,7 @@ export default function Standings() {
             {data.map((r, i) => (
               <tr key={r.id} className="border-t border-emerald-100">
                 <td className="p-3">{i + 1}</td>
-                <td className="p-3 font-semibold">{r.firstName}</td>
+                <td className="p-3 font-semibold">{r.tile && <Tile t={r.tile} />} {r.firstName}</td>
                 <td className="p-3 text-right font-bold">{r.points}</td>
                 <td className="p-3 text-right">{r.games}</td>
                 <td className="p-3 text-right">

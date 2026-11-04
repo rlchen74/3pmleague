@@ -60,3 +60,37 @@ export const events = pgTable('events', {
     .references(() => players.id, { onDelete: 'cascade' }),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
+
+export const polls = pgTable('polls', {
+  id: serial('id').primaryKey(),
+  question: text('question').notNull(),
+  createdBy: integer('created_by')
+    .notNull()
+    .references(() => players.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+export const pollOptions = pgTable('poll_options', {
+  id: serial('id').primaryKey(),
+  pollId: integer('poll_id')
+    .notNull()
+    .references(() => polls.id, { onDelete: 'cascade' }),
+  label: text('label').notNull(),
+})
+
+export const pollVotes = pgTable(
+  'poll_votes',
+  {
+    id: serial('id').primaryKey(),
+    pollId: integer('poll_id')
+      .notNull()
+      .references(() => polls.id, { onDelete: 'cascade' }),
+    optionId: integer('option_id')
+      .notNull()
+      .references(() => pollOptions.id, { onDelete: 'cascade' }),
+    playerId: integer('player_id')
+      .notNull()
+      .references(() => players.id, { onDelete: 'cascade' }),
+  },
+  (t) => [unique().on(t.pollId, t.playerId)],
+)
