@@ -6,6 +6,7 @@ import Scoring from './pages/Scoring'
 import Calendar from './pages/Calendar'
 import Info from './pages/Info'
 import { Tile } from './tiles'
+import { api } from './api'
 
 const tabs = [
   { to: '/', label: 'Info' },
@@ -19,16 +20,16 @@ export default function App() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/me')
-      .then((r) => r.json())
-      .then((d) => setPlayer(d.player))
-      .finally(() => setLoading(false))
-  }, [])
+  api<{ player: Player | null }>('/api/me')
+    .then((d) => setPlayer(d.player))
+    .catch(() => setPlayer(null))
+    .finally(() => setLoading(false))
+}, [])
 
-  async function logout() {
-    await fetch('/api/logout', { method: 'POST' })
-    setPlayer(null)
-  }
+async function logout() {
+  await api('/api/logout', { method: 'POST' })
+  setPlayer(null)
+}
 
   if (loading || !player) {
     return (

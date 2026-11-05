@@ -6,6 +6,7 @@ import rateLimit from 'express-rate-limit'
 import { z } from 'zod'
 import { asc, eq } from 'drizzle-orm'
 import { db } from './db/index.js'
+import cors from 'cors'
 import { players } from './db/schema.js'
 import { router as gamesRouter } from './games.js'
 import { router as pairingsRouter } from './pairings.js'
@@ -20,6 +21,13 @@ if (!sessionSecret || !turnstileSecret) {
 }
 
 const app = express()
+app.set('trust proxy', 1) // Render sits behind a proxy; needed for secure cookies and rate limits
+app.use(
+  cors({
+    origin: process.env.WEB_ORIGIN ?? 'http://localhost:5173',
+    credentials: true,
+  }),
+)
 app.use(express.json())
 app.use(cookieParser(sessionSecret))
 

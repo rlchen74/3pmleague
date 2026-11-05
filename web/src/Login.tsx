@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Turnstile } from '@marsidev/react-turnstile'
+import { api } from './api'
 
 export interface Player {
   id: number
@@ -16,25 +17,26 @@ export default function Login({ onLogin }: { onLogin: (p: Player) => void }) {
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    fetch('/api/players')
-      .then((r) => r.json())
-      .then(setNames)
-      .catch(() => setError('Could not load players (the server may be waking up)'))
-  }, [])
+  api<{ id: number; firstName: string }[]>('/api/players')
+    .then(setNames)
+    .catch(() => setError('Could not load players (the server may be waking up)'))
+}, [])
 
   async function submit() {
-    setBusy(true)
-    setError('')
-    const resp = await fetch('/api/session', {
+  setBusy(true)
+  setError('')
+  try {
+    const data = await api<{ player: Player }>('/api/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ playerId: Number(playerId), turnstileToken: token }),
     })
-    const data = await resp.json()
-    setBusy(false)
-    if (!resp.ok) return setError(data.error ?? 'Something went wrong')
     onLogin(data.player)
+  } catch (e) {
+    setError((e as Error).message)
   }
+  setBusy(false)
+}
 
   return (
     <div className="w-full max-w-sm rounded-xl bg-white p-6 text-emerald-950 shadow-lg">
