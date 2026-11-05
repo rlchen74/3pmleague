@@ -36,6 +36,13 @@
       "when": 1793907800607,
       "tag": "0004_loud_jetstream",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793908251638,
+      "tag": "0005_early_quentin_quire",
+      "breakpoints": true
     }
   ]
 }

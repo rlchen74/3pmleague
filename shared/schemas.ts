@@ -73,7 +73,7 @@ export const gameSchema = z
 
 export const availabilitySchema = z.object({
   day: isoDate,
-  available: z.boolean(),
+  unavailable: z.boolean(),
 })
 
 export const eventSchema = z.object({
