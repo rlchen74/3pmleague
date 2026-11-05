@@ -63,7 +63,8 @@ export default function Calendar({ me }: { me: Player }) {
   })
   const { data: allPlayers = [] } = useQuery({
     queryKey: ['players'],
-    queryFn: () => api<{ id: number; firstName: string }[]>('/api/players'),
+    queryFn: () => api<{ id: number; firstName: string; isActive: boolean }[]>('/api/players'),
+    select: (rows) => rows.filter((r) => r.isActive),
   })
 
   const toggle = useMutation({
@@ -113,7 +114,9 @@ export default function Calendar({ me }: { me: Player }) {
     onError: (e: Error) => setError(e.message),
   })
 
-  const offOn = (key: string) => off.filter((s) => s.day === key)
+  const activeIds = new Set(allPlayers.map((p) => p.id))
+  const offOn = (key: string) =>
+    off.filter((s) => s.day === key && activeIds.has(s.playerId))
   const isOff = (key: string) => off.some((s) => s.playerId === me.id && s.day === key)
 
   function tap(key: string) {

@@ -20,7 +20,12 @@ type RecentGame = {
   id: number
   playedOn: string
   enteredBy: number | null
-  results: { playerId: number; firstName: string; score: number; countsTowardStandings: boolean }[]
+  results: {
+    playerId: number
+    firstName: string
+    score: number
+    countsTowardStandings: boolean
+  }[]
   hands: {
     handNumber: number
     winnerId: number | null
@@ -33,6 +38,7 @@ type RecentGame = {
 const blankSlot = (): Slot => ({ playerId: '', counts: true })
 const blankHand = (): HandRow => ({ winner: '', selfDraw: false, discarder: '', faan: '' })
 const field = 'w-full rounded-lg border border-brand-300 bg-white p-2 disabled:opacity-50'
+const today = () => new Date().toLocaleDateString('en-CA')
 
 const toHand = (r: HandRow): HandInput =>
   r.winner === 'draw'
@@ -58,13 +64,14 @@ export default function Scoring({ me }: { me: Player }) {
   const qc = useQueryClient()
   const { data: names = [] } = useQuery({
     queryKey: ['players'],
-    queryFn: () => api<{ id: number; firstName: string }[]>('/api/players'),
+    queryFn: () => api<{ id: number; firstName: string; isActive: boolean }[]>('/api/players'),
   })
   const { data: recent = [] } = useQuery({
     queryKey: ['games'],
     queryFn: () => api<RecentGame[]>('/api/games'),
   })
-  const [playedOn, setPlayedOn] = useState(new Date().toLocaleDateString('en-CA'))
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [playedOn, setPlayedOn] = useState(today())
   const [slots, setSlots] = useState<Slot[]>([blankSlot(), blankSlot(), blankSlot(), blankSlot()])
   const [rows, setRows] = useState<HandRow[]>(Array.from({ length: HANDS_PER_GAME }, blankHand))
   const [error, setError] = useState('')
@@ -74,6 +81,8 @@ export default function Scoring({ me }: { me: Player }) {
   const allPicked = chosen.length === 4
   const ids = slots.map((s) => Number(s.playerId))
   const picked = slots.filter((s) => s.playerId)
+  // Inactive players only appear if they are already part of the game being edited
+  const selectable = names.filter((n) => n.isActive || chosen.includes(String(n.id)))
 
   // Running totals from completed hands
   const totals = slots.map(() => 0)
@@ -91,6 +100,37 @@ export default function Scoring({ me }: { me: Player }) {
     setSlots((ss) => ss.map((s, j) => (j === i ? { ...s, ...patch } : s)))
   const setHand = (i: number, patch: Partial<HandRow>) =>
     setRows((rs) => rs.map((r, j) => (j === i ? { ...r, ...patch } : r)))
+
+  function resetForm() {
+    setEditingId(null)
+    setPlayedOn(today())
+    setSlots([blankSlot(), blankSlot(), blankSlot(), blankSlot()])
+    setRows(Array.from({ length: HANDS_PER_GAME }, blankHand))
+    setError('')
+  }
+
+  function startEdit(g: RecentGame) {
+    setEditingId(g.id)
+    setPlayedOn(g.playedOn)
+    setSlots(
+      g.results.map((r) => ({ playerId: String(r.playerId), counts: r.countsTowardStandings })),
+    )
+    setRows(
+      Array.from({ length: HANDS_PER_GAME }, (_, i) => {
+        const h = g.hands.find((x) => x.handNumber === i + 1)
+        if (!h) return blankHand()
+        if (h.winnerId === null) return { winner: 'draw', selfDraw: false, discarder: '', faan: '' }
+        return {
+          winner: String(h.winnerId),
+          selfDraw: h.selfDraw,
+          discarder: h.discarderId ? String(h.discarderId) : '',
+          faan: h.faan === null ? '' : String(h.faan),
+        }
+      }),
+    )
+    setError('')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   function changePlayer(i: number, value: string) {
     const old = slots[i].playerId
@@ -131,16 +171,14 @@ export default function Scoring({ me }: { me: Player }) {
         })),
         hands: rows.map(toHand),
       })
-      return api('/api/games', {
-        method: 'POST',
+      return api(editingId ? `/api/games/${editingId}` : '/api/games', {
+        method: editingId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
     },
     onSuccess: () => {
-      setSlots([blankSlot(), blankSlot(), blankSlot(), blankSlot()])
-      setRows(Array.from({ length: HANDS_PER_GAME }, blankHand))
-      setError('')
+      resetForm()
       refresh()
     },
     onError: (e: Error) => setError(e.message),
@@ -148,7 +186,10 @@ export default function Scoring({ me }: { me: Player }) {
 
   const remove = useMutation({
     mutationFn: (id: number) => api(`/api/games/${id}`, { method: 'DELETE' }),
-    onSuccess: refresh,
+    onSuccess: (_d, id) => {
+      if (id === editingId) resetForm()
+      refresh()
+    },
     onError: (e: Error) => setError(e.message),
   })
 
@@ -162,7 +203,15 @@ export default function Scoring({ me }: { me: Player }) {
 
   return (
     <div>
-      <h1 className="mb-1 text-2xl font-bold">Enter a game</h1>
+      <h1 className="mb-1 text-2xl font-bold">{editingId ? 'Edit game' : 'Enter a game'}</h1>
+      {editingId && (
+        <div className="mb-3 flex items-center justify-between rounded-lg bg-amber-100 p-2 text-sm text-amber-950">
+          <span>Editing a saved game. Saving replaces its hands and scores.</span>
+          <button onClick={resetForm} className="font-semibold underline">
+            Cancel
+          </button>
+        </div>
+      )}
       <p className="mb-3 text-sm text-slate-600">
         Every winning hand must be worth at least {FAAN_MIN} faan. Winner scores 2 × faan − 3. A
         deal-in loses {DEAL_IN_PENALTY}. On a self-draw, each other player loses {SELF_DRAW_PENALTY}.
@@ -179,7 +228,7 @@ export default function Scoring({ me }: { me: Player }) {
         <div key={i} className="mt-2 rounded-lg bg-white p-3 shadow">
           <select value={s.playerId} onChange={(e) => changePlayer(i, e.target.value)} className={field}>
             <option value="">Player {i + 1}...</option>
-            {names.map((n) => (
+            {selectable.map((n) => (
               <option
                 key={n.id}
                 value={n.id}
@@ -284,7 +333,7 @@ export default function Scoring({ me }: { me: Player }) {
         disabled={!ready || save.isPending}
         className="mt-4 w-full rounded-lg bg-brand-800 p-3 font-semibold text-white disabled:opacity-40"
       >
-        {save.isPending ? 'Saving...' : 'Submit game'}
+        {save.isPending ? 'Saving...' : editingId ? 'Save changes' : 'Submit game'}
       </button>
 
       <h2 className="mb-2 mt-8 text-xl font-bold">Recent games</h2>
@@ -294,12 +343,17 @@ export default function Scoring({ me }: { me: Player }) {
           <div className="flex justify-between font-semibold">
             <span>{g.playedOn}</span>
             {(g.enteredBy === me.id || me.isAdmin) && (
-              <button
-                onClick={() => confirm('Delete this game?') && remove.mutate(g.id)}
-                className="text-red-700 underline"
-              >
-                Delete
-              </button>
+              <span className="flex gap-3">
+                <button onClick={() => startEdit(g)} className="text-brand-800 underline">
+                  Edit
+                </button>
+                <button
+                  onClick={() => confirm('Delete this game?') && remove.mutate(g.id)}
+                  className="text-red-700 underline"
+                >
+                  Delete
+                </button>
+              </span>
             )}
           </div>
           <p className="mt-1">
