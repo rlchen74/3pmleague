@@ -9,7 +9,7 @@ interface Row {
   games: number
   points: number
   wins: number
-  bestHand: number
+  dealIns: number
 }
 
 export default function Standings() {
@@ -34,7 +34,7 @@ export default function Standings() {
               <th className="p-3 text-right">GP</th>
               <th className="p-3 text-right">Avg</th>
               <th className="p-3 text-right">Wins</th>
-              <th className="p-3 text-right">Best</th>
+              <th className="p-3 text-right">Deal-ins</th>
             </tr>
           </thead>
           <tbody>
@@ -55,7 +55,7 @@ export default function Standings() {
                   {r.games ? (r.points / r.games).toFixed(1) : '–'}
                 </td>
                 <td className="p-3 text-right">{r.wins}</td>
-                <td className="p-3 text-right">{r.bestHand}</td>
+                <td className="p-3 text-right">{r.dealIns}</td>
               </tr>
             ))}
           </tbody>

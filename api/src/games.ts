@@ -1,11 +1,10 @@
 import { Router, type RequestHandler } from 'express'
-import { and, count, desc, eq, inArray, sql } from 'drizzle-orm'
+import { and, asc, count, desc, eq, inArray, sql } from 'drizzle-orm'
 import { db } from './db/index.js'
-import { players, games, gameResults } from './db/schema.js'
-import { gameSchema } from '../../shared/schemas.js'
+import { players, games, gameResults, hands } from './db/schema.js'
+import { gameSchema, computeResults } from '../../shared/schemas.js'
 
 export const router = Router()
-
 
 export const requireLogin: RequestHandler = (req, res, next) => {
   const id = Number(req.signedCookies.player_id)
@@ -13,7 +12,6 @@ export const requireLogin: RequestHandler = (req, res, next) => {
   res.locals.playerId = id
   next()
 }
-
 
 // Standings are calculated from game results, never stored
 router.get('/standings', requireLogin, async (_req, res) => {
@@ -25,7 +23,7 @@ router.get('/standings', requireLogin, async (_req, res) => {
       games: count(gameResults.id),
       points: sql<number>`coalesce(sum(${gameResults.score}), 0)`.mapWith(Number),
       wins: sql<number>`coalesce(sum(${gameResults.wins}), 0)`.mapWith(Number),
-      bestHand: sql<number>`coalesce(max(${gameResults.bestHand}), 0)`.mapWith(Number),
+      dealIns: sql<number>`coalesce(sum(${gameResults.dealIns}), 0)`.mapWith(Number),
     })
     .from(players)
     .leftJoin(
@@ -43,25 +41,36 @@ router.get('/standings', requireLogin, async (_req, res) => {
 router.get('/games', requireLogin, async (_req, res) => {
   const recent = await db.select().from(games).orderBy(desc(games.id)).limit(10)
   if (recent.length === 0) return void res.json([])
-  const results = await db
-    .select({
-      gameId: gameResults.gameId,
-      playerId: gameResults.playerId,
-      firstName: players.firstName,
-      score: gameResults.score,
-      wins: gameResults.wins,
-      bestHand: gameResults.bestHand,
-      countsTowardStandings: gameResults.countsTowardStandings,
-    })
-    .from(gameResults)
-    .innerJoin(players, eq(gameResults.playerId, players.id))
-    .where(inArray(gameResults.gameId, recent.map((g) => g.id)))
+  const ids = recent.map((g) => g.id)
+  const [results, handRows] = await Promise.all([
+    db
+      .select({
+        gameId: gameResults.gameId,
+        playerId: gameResults.playerId,
+        firstName: players.firstName,
+        score: gameResults.score,
+        countsTowardStandings: gameResults.countsTowardStandings,
+      })
+      .from(gameResults)
+      .innerJoin(players, eq(gameResults.playerId, players.id))
+      .where(inArray(gameResults.gameId, ids)),
+    db.select().from(hands).where(inArray(hands.gameId, ids)).orderBy(asc(hands.handNumber)),
+  ])
   res.json(
     recent.map((g) => ({
       id: g.id,
       playedOn: g.playedOn,
       enteredBy: g.enteredBy,
       results: results.filter((r) => r.gameId === g.id),
+      hands: handRows
+        .filter((h) => h.gameId === g.id)
+        .map((h) => ({
+          handNumber: h.handNumber,
+          winnerId: h.winnerId,
+          discarderId: h.discarderId,
+          selfDraw: h.selfDraw,
+          faan: h.faan,
+        })),
     })),
   )
 })
@@ -71,17 +80,38 @@ router.post('/games', requireLogin, async (req, res) => {
   if (!parsed.success) {
     return void res.status(400).json({ error: parsed.error.issues[0].message })
   }
-  const { playedOn, results } = parsed.data
-  // A transaction: either the game and all 4 results save, or nothing does
-  const game = await db.transaction(async (tx) => {
+  const game = parsed.data
+  const results = computeResults(game)
+  // One transaction: the game, its hands, and every player's result save together or not at all
+  const created = await db.transaction(async (tx) => {
     const [g] = await tx
       .insert(games)
-      .values({ playedOn, enteredBy: res.locals.playerId })
+      .values({ playedOn: game.playedOn, enteredBy: res.locals.playerId })
       .returning()
-    await tx.insert(gameResults).values(results.map((r) => ({ ...r, gameId: g.id })))
+    await tx.insert(hands).values(
+      game.hands.map((h, i) => ({
+        gameId: g.id,
+        handNumber: i + 1,
+        winnerId: h.winnerId,
+        discarderId: h.discarderId,
+        selfDraw: h.selfDraw,
+        faan: h.faan,
+      })),
+    )
+    await tx.insert(gameResults).values(
+      results.map((r, i) => ({
+        gameId: g.id,
+        playerId: r.playerId,
+        seat: i + 1,
+        score: r.score,
+        wins: r.wins,
+        dealIns: r.dealIns,
+        countsTowardStandings: r.countsTowardStandings,
+      })),
+    )
     return g
   })
-  res.status(201).json(game)
+  res.status(201).json(created)
 })
 
 // Only the person who entered a game (or an admin) can delete it
@@ -93,6 +123,6 @@ router.delete('/games/:id', requireLogin, async (req, res) => {
   if (game.enteredBy !== me.id && !me.isAdmin) {
     return void res.status(403).json({ error: 'Only the person who entered it can delete it' })
   }
-  await db.delete(games).where(eq(games.id, id)) // results cascade-delete
+  await db.delete(games).where(eq(games.id, id)) // results and hands cascade-delete
   res.json({ ok: true })
 })
