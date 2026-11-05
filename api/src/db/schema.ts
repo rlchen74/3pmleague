@@ -31,6 +31,7 @@ export const gameResults = pgTable(
     seat: integer('seat'),
     score: integer('score').notNull(),
     wins: integer('wins').notNull().default(0),
+    dealIns: integer('deal_ins').notNull().default(0),
     bestHand: integer('best_hand').notNull().default(0),
     countsTowardStandings: boolean('counts_toward_standings')
       .notNull()
@@ -93,4 +94,32 @@ export const pollVotes = pgTable(
       .references(() => players.id, { onDelete: 'cascade' }),
   },
   (t) => [unique().on(t.pollId, t.playerId)],
+)
+
+export const hands = pgTable(
+  'hands',
+  {
+    id: serial('id').primaryKey(),
+    gameId: integer('game_id')
+      .notNull()
+      .references(() => games.id, { onDelete: 'cascade' }),
+    handNumber: integer('hand_number').notNull(),
+    winnerId: integer('winner_id').references(() => players.id),
+    discarderId: integer('discarder_id').references(() => players.id),
+    selfDraw: boolean('self_draw').notNull().default(false),
+    faan: integer('faan'),
+  },
+  (t) => [unique().on(t.gameId, t.handNumber)],
+)
+
+export const unavailability = pgTable(
+  'unavailability',
+  {
+    id: serial('id').primaryKey(),
+    playerId: integer('player_id')
+      .notNull()
+      .references(() => players.id, { onDelete: 'cascade' }),
+    day: date('day').notNull(),
+  },
+  (t) => [unique().on(t.playerId, t.day)],
 )

@@ -3,15 +3,18 @@ export const TILES = Array.from({ length: 42 }, (_, i) =>
   String.fromCodePoint(0x1f000 + i),
 )
 
-const FONT = "'Noto Sans Symbols 2', system-ui, sans-serif"
-
-// Draws a tile glyph. The red dragon gets U+FE0E so it shows as a tile, not an emoji.
-export function Tile({ t }: { t: string }) {
-  const redDragon = t.codePointAt(0) === 0x1f004
+// Draws a tile from /tiles/<hex>.svg. The height follows the surrounding
+// text size, so classes like text-4xl still control how big it is.
+export function Tile({ t, className = '' }: { t: string; className?: string }) {
+  const hex = t.codePointAt(0)!.toString(16)
   return (
-    <span style={{ fontFamily: FONT }}>
-      {t}
-      {redDragon ? '\uFE0E' : ''}
+    <span className={`inline-flex items-center align-middle ${className}`}>
+      <img
+        src={`/tiles/${hex}.svg`}
+        alt={t}
+        draggable={false}
+        style={{ height: '1.25em', width: 'auto' }}
+      />
     </span>
   )
 }

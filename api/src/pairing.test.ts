@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { suggestTables } from './pairing.js'
+import { suggestTables, suggestForPlayer } from './pairing.js'
 
 const free = (ids: number[], days: string[]) =>
   Object.fromEntries(ids.map((i) => [i, days]))
@@ -43,5 +43,75 @@ describe('suggestTables', () => {
     })
     expect(r.tables[0].players).not.toContain(5)
     expect(r.unplaced).toHaveLength(0)
+  })
+})
+
+describe('suggestForPlayer', () => {
+  const day = '2026-11-12'
+
+  it('only offers free opponents the viewer has not faced', () => {
+    const r = suggestForPlayer({
+      viewerId: 1,
+      days: free([1, 2, 3, 4, 5], [day]),
+      gamesPlayed: {},
+      met: { 1: [2], 2: [1] },
+    })
+    expect(r.options).toEqual([{ day, opponents: [3, 4, 5] }])
+  })
+
+  it('never seats two opponents who have already met', () => {
+    const r = suggestForPlayer({
+      viewerId: 1,
+      days: free([1, 2, 3, 4, 5, 6], [day]),
+      gamesPlayed: {},
+      met: { 3: [4], 4: [3] },
+    })
+    expect(r.options.length).toBeGreaterThan(0)
+    expect(r.options.every((o) => !(o.opponents.includes(3) && o.opponents.includes(4)))).toBe(true)
+  })
+
+  it('says so when the viewer has finished their games', () => {
+    const r = suggestForPlayer({
+      viewerId: 1,
+      days: free([1, 2, 3, 4], [day]),
+      gamesPlayed: { 1: 5 },
+      met: {},
+    })
+    expect(r.options).toHaveLength(0)
+    expect(r.reason).toContain('already')
+  })
+    it('offers up to 3 tables with completely different opponents', () => {
+    const r = suggestForPlayer({
+      viewerId: 1,
+      days: free([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], [day]),
+      gamesPlayed: {},
+      met: {},
+      seed: 7,
+    })
+    expect(r.options).toHaveLength(3)
+    const everyone = r.options.flatMap((o) => o.opponents)
+    expect(new Set(everyone).size).toBe(9)
+  })
+
+  it('offers fewer tables when there are not enough people left', () => {
+    const r = suggestForPlayer({
+      viewerId: 1,
+      days: free([1, 2, 3, 4, 5, 6, 7, 8], [day]),
+      gamesPlayed: {},
+      met: {},
+      seed: 7,
+    })
+    expect(r.options).toHaveLength(2)
+  })
+
+  it('gives the same suggestions for the same seed', () => {
+    const input = {
+      viewerId: 1,
+      days: free([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [day]),
+      gamesPlayed: {},
+      met: {},
+      seed: 42,
+    }
+    expect(suggestForPlayer(input)).toEqual(suggestForPlayer(input))
   })
 })

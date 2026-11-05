@@ -115,3 +115,112 @@ export function suggestTables(input: PairingInput): PairingResult {
 
   return { tables, unplaced, searchComplete }
 }
+
+export interface PersonalInput {
+  viewerId: number
+  days: Record<number, string[]> // playerId -> free days this week
+  gamesPlayed: Record<number, number>
+  met: Record<number, number[]>
+  target?: number
+  maxOptions?: number
+  seed?: number
+}
+export interface PersonalResult {
+  options: { day: string; opponents: number[] }[]
+  reason: string | null
+}
+
+// Turn any string into a number usable as a random seed
+export function hashSeed(s: string): number {
+  let h = 2166136261
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return h >>> 0
+}
+
+// Small seeded random generator: the same seed always gives the same sequence
+function mulberry32(seed: number) {
+  let a = seed >>> 0
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0
+    let t = a
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+// Up to `maxOptions` tables the viewer could play this week. Each has three opponents who are
+// free the same day, who have not faced the viewer or each other, and who still need games.
+// No opponent appears in more than one option.
+export function suggestForPlayer(input: PersonalInput): PersonalResult {
+  const target = input.target ?? TARGET_GAMES
+  const maxOptions = input.maxOptions ?? 3
+  const gp = (p: number) => input.gamesPlayed[p] ?? 0
+  const haveMet = (a: number, b: number) => input.met[a]?.includes(b) ?? false
+  const v = input.viewerId
+  const rand = mulberry32(input.seed ?? 0)
+
+  if (gp(v) >= target) {
+    return { options: [], reason: `You've already played your ${target} league games.` }
+  }
+  const myDays = input.days[v] ?? []
+  if (myDays.length === 0) {
+    return { options: [], reason: 'You have marked every day this week as unavailable.' }
+  }
+
+  const others = Object.keys(input.days)
+    .map(Number)
+    .filter((p) => p !== v && gp(p) < target && !haveMet(v, p))
+
+  // Every valid table on every day I am free
+  type Candidate = { day: string; opponents: number[] }
+  const all: Candidate[] = []
+  for (const day of [...myDays].sort()) {
+    const pool = others.filter((p) => (input.days[p] ?? []).includes(day))
+    for (let a = 0; a < pool.length; a++) {
+      for (let b = a + 1; b < pool.length; b++) {
+        if (haveMet(pool[a], pool[b])) continue
+        for (let c = b + 1; c < pool.length; c++) {
+          if (haveMet(pool[a], pool[c]) || haveMet(pool[b], pool[c])) continue
+          all.push({ day, opponents: [pool[a], pool[b], pool[c]] })
+        }
+      }
+    }
+  }
+
+  if (all.length === 0) {
+    return {
+      options: [],
+      reason:
+        'No day this week has three other free players you have not faced yet who still need games.',
+    }
+  }
+
+  const shuffle = <T,>(items: T[]): T[] => {
+    for (let i = items.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1))
+      ;[items[i], items[j]] = [items[j], items[i]]
+    }
+    return items
+  }
+
+  // Several random passes; keep whichever finds the most tables with completely different people
+  let best: Candidate[] = []
+  for (let attempt = 0; attempt < 60 && best.length < maxOptions; attempt++) {
+    const chosen: Candidate[] = []
+    const used = new Set<number>()
+    for (const c of shuffle([...all])) {
+      if (c.opponents.some((p) => used.has(p))) continue
+      chosen.push(c)
+      c.opponents.forEach((p) => used.add(p))
+      if (chosen.length === maxOptions) break
+    }
+    if (chosen.length > best.length) best = chosen
+  }
+
+  best.sort((x, y) => x.day.localeCompare(y.day))
+  return { options: best, reason: null }
+}

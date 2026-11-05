@@ -4,12 +4,12 @@ import { Tile } from '../tiles'
 
 interface Row {
   id: number
-  tile: string | null
   firstName: string
+  tile: string | null
   games: number
   points: number
   wins: number
-  bestHand: number
+  dealIns: number
 }
 
 export default function Standings() {
@@ -26,7 +26,7 @@ export default function Standings() {
       <h1 className="mb-3 text-2xl font-bold">Standings</h1>
       <div className="overflow-x-auto rounded-lg bg-white shadow">
         <table className="w-full text-left text-sm">
-          <thead className="bg-emerald-100 text-emerald-900">
+          <thead className="bg-brand-100 text-brand-900">
             <tr>
               <th className="p-3">#</th>
               <th className="p-3">Player</th>
@@ -34,21 +34,28 @@ export default function Standings() {
               <th className="p-3 text-right">GP</th>
               <th className="p-3 text-right">Avg</th>
               <th className="p-3 text-right">Wins</th>
-              <th className="p-3 text-right">Best</th>
+              <th className="p-3 text-right">Deal-ins</th>
             </tr>
           </thead>
           <tbody>
             {data.map((r, i) => (
-              <tr key={r.id} className="border-t border-emerald-100">
+              <tr key={r.id} className="border-t border-brand-100">
                 <td className="p-3">{i + 1}</td>
-                <td className="p-3 font-semibold">{r.tile && <Tile t={r.tile} />} {r.firstName}</td>
+                <td className="p-3 font-semibold">
+                  <span className="flex items-center gap-2">
+                    {r.tile && (
+                      <Tile t={r.tile} className="text-4xl leading-none text-brand-900" />
+                    )}
+                    {r.firstName}
+                  </span>
+                </td>
                 <td className="p-3 text-right font-bold">{r.points}</td>
                 <td className="p-3 text-right">{r.games}</td>
                 <td className="p-3 text-right">
                   {r.games ? (r.points / r.games).toFixed(1) : '–'}
                 </td>
                 <td className="p-3 text-right">{r.wins}</td>
-                <td className="p-3 text-right">{r.bestHand}</td>
+                <td className="p-3 text-right">{r.dealIns}</td>
               </tr>
             ))}
           </tbody>

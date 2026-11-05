@@ -11,10 +11,10 @@ I built it end to end (design, data model, API, frontend, CI, deployment) both t
 ## Features
 
 - **Rules & Info:** league rules, polls with live results, and tile-avatar profiles
-- **Calendar:** weekly view where players mark the days they are free, add events such as "hosting", and see how many tables each day could support
-- **Suggested tables:** a pairing algorithm proposes tables for the week from availability and head-to-head history
-- **Scoring:** enter a four-player game with scores, wins, and best hand
-- **Standings:** computed from stored game results (points, games played, average, wins, best hand)
+- **Calendar:** monthly view where everyone counts as free unless they mark a day off, with events such as ‘hosting’ and live counts of how many tables each day could support
+- **Suggested tables:** a pairing algorithm proposes tables for the week from availability and head-to-head history - suggestions are per player: up to three non-overlapping tables chosen at random with a seeded generator, so they stay stable until availability changes or the player asks for new ones
+- **Scoring:** enter a four-player game as eight hands (winner, self-draw or deal-in, and faan), with points computed automatically
+- **Standings:** computed from stored game results (points, games played, average, wins, deal-ins)
 - Mobile-first layout, no installation required
 
 ## Tech stack
@@ -50,7 +50,9 @@ The site and the API live on two subdomains of the same domain, so the browser t
 erDiagram
   players ||--o{ game_results : plays
   games ||--|{ game_results : has
+  games ||--|{ hands : has
   players ||--o{ availability : marks
+  players ||--o{ unavailability : marks
   players ||--o{ events : creates
   players ||--o{ polls : creates
   polls ||--|{ poll_options : has
