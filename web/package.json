@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postinstall": "npm ci --prefix ../shared"
   },
   "dependencies": {
     "@marsidev/react-turnstile": "^1.6.3",

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api'
 import type { Player } from '../Login'
+import { pollSchema, parseOrThrow } from '../../../shared/schemas'
 
 type Poll = {
   id: number
@@ -42,7 +43,7 @@ export default function Polls({ me }: { me: Player }) {
       api('/api/polls', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, options: options.filter((o) => o.trim()) }),
+        body: JSON.stringify(parseOrThrow(pollSchema, { question, options: options.filter((o) => o.trim()) }),),
       }),
     onSuccess: () => {
       setCreating(false)

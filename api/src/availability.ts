@@ -1,7 +1,7 @@
 import { Router } from 'express'
-import { z } from 'zod'
 import { and, asc, eq, gte, lte } from 'drizzle-orm'
 import { db } from './db/index.js'
+import { availabilitySchema } from '../../shared/schemas.js'
 import { players, availability } from './db/schema.js'
 import { requireLogin } from './games.js'
 
@@ -37,14 +37,9 @@ router.get('/availability', requireLogin, async (_req, res) => {
   res.json(rows)
 })
 
-const toggleSchema = z.object({
-  day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date'),
-  available: z.boolean(),
-})
-
 // Mark myself free (or not free) on one day
 router.put('/availability', requireLogin, async (req, res) => {
-  const parsed = toggleSchema.safeParse(req.body)
+  const parsed = availabilitySchema.safeParse(req.body)
   if (!parsed.success) {
     return void res.status(400).json({ error: parsed.error.issues[0].message })
   }
