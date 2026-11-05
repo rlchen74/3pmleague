@@ -1,0 +1,12 @@
+name: Keep API awake
+on:
+  schedule:
+    # Every 10 minutes, 14:00-06:59 UTC (covers 9am-midnight Central, with daylight saving slack)
+    - cron: '*/10 14-23,0-6 * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -fsS --retry 3 --max-time 60 https://api.3pmleague.com/api/health
