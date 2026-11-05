@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api'
 import type { Player } from '../Login'
+import { gameSchema, parseOrThrow } from '../../../shared/schemas'
 
 type Row = { playerId: string; score: string; wins: string; bestHand: string; counts: boolean }
 type RecentGame = {
@@ -36,21 +37,23 @@ export default function Scoring({ me }: { me: Player }) {
     setRows((rs) => rs.map((r, j) => (j === i ? { ...r, ...patch } : r)))
 
   const save = useMutation({
-    mutationFn: () =>
-      api('/api/games', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          playedOn,
-          results: rows.map((r) => ({
+    mutationFn: () => {
+        const payload = parseOrThrow(gameSchema, {
+            playedOn,
+            results: rows.map((r) => ({
             playerId: Number(r.playerId),
             score: Number(r.score),
             wins: Number(r.wins),
             bestHand: Number(r.bestHand),
             countsTowardStandings: r.counts,
-          })),
-        }),
-      }),
+            })),
+        })
+        return api('/api/games', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        })
+        },
     onSuccess: () => {
       setRows([blank(), blank(), blank(), blank()])
       setError('')

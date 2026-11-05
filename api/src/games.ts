@@ -1,13 +1,11 @@
 import { Router, type RequestHandler } from 'express'
-import { z } from 'zod'
 import { and, count, desc, eq, inArray, sql } from 'drizzle-orm'
 import { db } from './db/index.js'
 import { players, games, gameResults } from './db/schema.js'
+import { gameSchema } from '../../shared/schemas.js'
 
 export const router = Router()
 
-// Flip to true if your league's scores in a game always add up to zero
-const REQUIRE_ZERO_SUM = false
 
 export const requireLogin: RequestHandler = (req, res, next) => {
   const id = Number(req.signedCookies.player_id)
@@ -16,26 +14,6 @@ export const requireLogin: RequestHandler = (req, res, next) => {
   next()
 }
 
-const resultSchema = z.object({
-  playerId: z.number().int().positive(),
-  score: z.number().int(),
-  wins: z.number().int().min(0).default(0),
-  bestHand: z.number().int().min(0).default(0),
-  countsTowardStandings: z.boolean().default(true),
-})
-
-const gameSchema = z
-  .object({
-    playedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date'),
-    results: z.array(resultSchema).length(4, 'A game needs exactly 4 players'),
-  })
-  .refine((g) => new Set(g.results.map((r) => r.playerId)).size === 4, {
-    message: 'Each player can only appear once',
-  })
-  .refine(
-    (g) => !REQUIRE_ZERO_SUM || g.results.reduce((s, r) => s + r.score, 0) === 0,
-    { message: 'Scores must add up to zero' },
-  )
 
 // Standings are calculated from game results, never stored
 router.get('/standings', requireLogin, async (_req, res) => {

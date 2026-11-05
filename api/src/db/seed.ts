@@ -2,7 +2,7 @@ import { db } from './index.js'
 import { players } from './schema.js'
 
 const names = [
-  'Robert', 'Mei', 'Daniel', 'Priya', 'Tom', 'Sofia', 'Hiro', 'Alex',
+  'Adamo', 'Aileen', 'Alex', 'Charis', 'Dennis', 'Hac', 'Haley', "J'Ana", 'Jas', 'Justice', 'Kat', 'Monica', 'Marcus', 'Michael', 'Michelle', 'Peter', 'Phil', 'Robert', 'Yong'
 ]
 
 await db

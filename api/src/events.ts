@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { z } from 'zod'
+import { eventSchema } from '../../shared/schemas.js'
 import { and, asc, eq, gte, lte } from 'drizzle-orm'
 import { db } from './db/index.js'
 import { players, events } from './db/schema.js'
@@ -27,13 +27,8 @@ router.get('/events', requireLogin, async (_req, res) => {
   res.json(rows)
 })
 
-const createSchema = z.object({
-  day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date'),
-  title: z.string().trim().min(1, 'Give the event a title').max(80, 'Keep it under 80 characters'),
-})
-
 router.post('/events', requireLogin, async (req, res) => {
-  const parsed = createSchema.safeParse(req.body)
+  const parsed = eventSchema.safeParse(req.body)
   if (!parsed.success) {
     return void res.status(400).json({ error: parsed.error.issues[0].message })
   }

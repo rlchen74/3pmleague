@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api'
 import type { Player } from '../Login'
 import SuggestedTables from './SuggestedTables'
+import { eventSchema, parseOrThrow } from '../../../shared/schemas'
 
 type Slot = { playerId: number; firstName: string; day: string }
 type CalEvent = { id: number; day: string; title: string; createdBy: number; firstName: string }
@@ -74,7 +75,7 @@ export default function Calendar({ me }: { me: Player }) {
       api('/api/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(v),
+        body: JSON.stringify(parseOrThrow(eventSchema, v)),
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['events'] })

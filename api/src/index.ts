@@ -3,7 +3,7 @@ import { router as availabilityRouter } from './availability.js'
 import express from 'express'
 import cookieParser from 'cookie-parser'
 import rateLimit from 'express-rate-limit'
-import { z } from 'zod'
+import { loginSchema } from '../../shared/schemas.js'
 import { asc, eq } from 'drizzle-orm'
 import { db } from './db/index.js'
 import cors from 'cors'
@@ -76,10 +76,6 @@ app.get('/api/me', async (req, res) => {
 
 // Log in: pick a name + pass Turnstile
 const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 30 })
-const loginSchema = z.object({
-  playerId: z.number().int().positive(),
-  turnstileToken: z.string().min(1),
-})
 
 app.post('/api/session', loginLimiter, async (req, res) => {
   const parsed = loginSchema.safeParse(req.body)

@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { z } from 'zod'
+import { pollSchema, voteSchema } from '../../shared/schemas.js'
 import { and, asc, desc, eq, inArray } from 'drizzle-orm'
 import { db } from './db/index.js'
 import { players, polls, pollOptions, pollVotes } from './db/schema.js'
@@ -48,16 +48,8 @@ router.get('/polls', requireLogin, async (_req, res) => {
   )
 })
 
-const createSchema = z.object({
-  question: z.string().trim().min(1, 'Write a question').max(120, 'Keep the question under 120 characters'),
-  options: z
-    .array(z.string().trim().min(1, 'Options cannot be blank').max(60, 'Keep options under 60 characters'))
-    .min(2, 'Add at least 2 options')
-    .max(6, 'At most 6 options'),
-})
-
 router.post('/polls', requireLogin, async (req, res) => {
-  const parsed = createSchema.safeParse(req.body)
+  const parsed = pollSchema.safeParse(req.body)
   if (!parsed.success) {
     return void res.status(400).json({ error: parsed.error.issues[0].message })
   }
@@ -75,7 +67,7 @@ router.post('/polls', requireLogin, async (req, res) => {
 
 router.put('/polls/:id/vote', requireLogin, async (req, res) => {
   const pollId = Number(req.params.id)
-  const parsed = z.object({ optionId: z.number().int().positive() }).safeParse(req.body)
+  const parsed = voteSchema.safeParse(req.body)
   if (!parsed.success) return void res.status(400).json({ error: 'Invalid vote' })
 
   const [option] = await db
