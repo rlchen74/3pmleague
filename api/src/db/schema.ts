@@ -9,6 +9,7 @@ export const players = pgTable('players', {
   avatarUrl: text('avatar_url'),
   isAdmin: boolean('is_admin').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  isActive: boolean('is_active').notNull().default(true), 
 })
 
 export const games = pgTable('games', {
@@ -16,6 +17,7 @@ export const games = pgTable('games', {
   playedOn: date('played_on').notNull(),
   enteredBy: integer('entered_by').references(() => players.id),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  seasonId: integer('season_id').references(() => seasons.id),
 })
 
 export const gameResults = pgTable(
@@ -123,3 +125,17 @@ export const unavailability = pgTable(
   },
   (t) => [unique().on(t.playerId, t.day)],
 )
+
+export const seasons = pgTable('seasons', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  startedAt: timestamp('started_at').notNull().defaultNow(),
+  endedAt: timestamp('ended_at'),
+})
+
+export const siteContent = pgTable('site_content', {
+  key: text('key').primaryKey(),
+  body: text('body').notNull(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  updatedBy: integer('updated_by').references(() => players.id, { onDelete: 'set null' }),
+})

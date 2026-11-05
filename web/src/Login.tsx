@@ -17,8 +17,8 @@ export default function Login({ onLogin }: { onLogin: (p: Player) => void }) {
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-  api<{ id: number; firstName: string }[]>('/api/players')
-    .then(setNames)
+  api<{ id: number; firstName: string; isActive: boolean }[]>('/api/players')
+    .then((rows) => setNames(rows.filter((r) => r.isActive)))
     .catch(() => setError('Could not load players (the server may be waking up)'))
 }, [])
 

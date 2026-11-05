@@ -1,19 +1,20 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { and, count, eq, gte, lte, sql } from 'drizzle-orm'
+import { and, count, eq, gte, inArray, lte, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import { db } from './db/index.js'
 import { players, unavailability, gameResults } from './db/schema.js'
 import { requireLogin } from './games.js'
 import { todayStr, addDays, WINDOW_DAYS } from './availability.js'
 import { suggestForPlayer, hashSeed } from './pairing.js'
+import { currentSeason, gameIdsIn } from './seasonUtils.js'
 
 export const router = Router()
 
-  const querySchema = z.object({
-    weekStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-    shuffle: z.coerce.number().int().min(0).max(1000).default(0),
-  })
+const querySchema = z.object({
+  weekStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  shuffle: z.coerce.number().int().min(0).max(1000).default(0),
+})
 
 router.get('/pairings', requireLogin, async (req, res) => {
   const parsed = querySchema.safeParse(req.query)
@@ -31,19 +32,23 @@ router.get('/pairings', requireLogin, async (req, res) => {
   const weekDates: string[] = []
   for (let d = from; d <= to; d = addDays(d, 1)) weekDates.push(d)
 
+  // Opponent history and game counts only count within the current season
+  const season = await currentSeason()
+  const inSeason = inArray(gameResults.gameId, gameIdsIn(season.id))
+
   const other = alias(gameResults, 'other')
   const [offRows, playerRows, playedRows, pairRows] = await Promise.all([
     db
       .select({ playerId: unavailability.playerId, day: unavailability.day })
       .from(unavailability)
       .where(and(gte(unavailability.day, from), lte(unavailability.day, to))),
-    db.select({ id: players.id }).from(players),
+    db.select({ id: players.id }).from(players).where(eq(players.isActive, true)),
     db
       .select({ playerId: gameResults.playerId, n: count() })
       .from(gameResults)
-      .where(eq(gameResults.countsTowardStandings, true))
+      .where(and(eq(gameResults.countsTowardStandings, true), inSeason))
       .groupBy(gameResults.playerId),
-    // Every pair of players who have shared a table (both directions)
+    // Every pair of players who have shared a table this season (both directions)
     db
       .selectDistinct({ a: gameResults.playerId, b: other.playerId })
       .from(gameResults)
@@ -53,7 +58,8 @@ router.get('/pairings', requireLogin, async (req, res) => {
           eq(gameResults.gameId, other.gameId),
           sql`${gameResults.playerId} <> ${other.playerId}`,
         ),
-      ),
+      )
+      .where(inSeason),
   ])
 
   // Free days = every date in the week minus the days someone marked off
@@ -69,6 +75,6 @@ router.get('/pairings', requireLogin, async (req, res) => {
   const met: Record<number, number[]> = {}
   for (const r of pairRows) (met[r.a] ??= []).push(r.b)
 
-    const seed = hashSeed(`${res.locals.playerId}|${weekStart}|${shuffle}`)
-    res.json(suggestForPlayer({ viewerId: res.locals.playerId, days, gamesPlayed, met, seed })) 
+  const seed = hashSeed(`${res.locals.playerId}|${weekStart}|${shuffle}`)
+  res.json(suggestForPlayer({ viewerId: res.locals.playerId, days, gamesPlayed, met, seed }))
 })

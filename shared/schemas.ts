@@ -165,3 +165,18 @@ export function parseOrThrow<S extends z.ZodType>(schema: S, data: unknown): z.i
   if (!r.success) throw new Error(r.error.issues[0].message)
   return r.data
 }
+
+export const contentSchema = z.object({
+  key: z.enum(['rules', 'info']),
+  body: z.string().trim().max(5000, 'Keep it under 5000 characters'),
+})
+
+export const newPlayerSchema = z.object({
+  firstName: z.string().trim().min(1, 'Enter a name').max(30, 'Keep the name under 30 characters'),
+})
+
+export const activeSchema = z.object({ isActive: z.boolean() })
+
+export const newSeasonSchema = z.object({
+  name: z.string().trim().min(1, 'Name the season').max(40, 'Keep it under 40 characters'),
+})

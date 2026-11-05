@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api'
 import { Tile } from '../tiles'
@@ -11,11 +12,19 @@ interface Row {
   wins: number
   dealIns: number
 }
+type Season = { id: number; name: string; isCurrent: boolean }
 
 export default function Standings() {
+  const [picked, setPicked] = useState<number | null>(null)
+  const { data: seasons = [] } = useQuery({
+    queryKey: ['seasons'],
+    queryFn: () => api<Season[]>('/api/seasons'),
+  })
+  const seasonId = picked ?? seasons.find((s) => s.isCurrent)?.id ?? null
+
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['standings'],
-    queryFn: () => api<Row[]>('/api/standings'),
+    queryKey: ['standings', seasonId],
+    queryFn: () => api<Row[]>(`/api/standings${seasonId ? `?seasonId=${seasonId}` : ''}`),
   })
 
   if (isLoading) return <p>Loading standings...</p>
@@ -23,7 +32,23 @@ export default function Standings() {
 
   return (
     <div>
-      <h1 className="mb-3 text-2xl font-bold">Standings</h1>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h1 className="text-2xl font-bold">Standings</h1>
+        {seasons.length > 1 && (
+          <select
+            value={seasonId ?? ''}
+            onChange={(e) => setPicked(Number(e.target.value))}
+            className="rounded-lg border border-brand-300 bg-white p-2 text-sm"
+          >
+            {seasons.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+                {s.isCurrent ? ' (current)' : ''}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
       <div className="overflow-x-auto rounded-lg bg-white shadow">
         <table className="w-full text-left text-sm">
           <thead className="bg-brand-100 text-brand-900">
