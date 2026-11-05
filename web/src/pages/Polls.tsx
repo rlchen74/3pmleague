@@ -12,7 +12,7 @@ type Poll = {
   options: { id: number; label: string; voters: string[] }[]
 }
 
-const input = 'w-full rounded-lg border border-emerald-300 bg-white p-2 text-sm'
+const input = 'w-full rounded-lg border border-brand-300 bg-white p-2 text-sm'
 
 export default function Polls({ me }: { me: Player }) {
   const qc = useQueryClient()
@@ -92,11 +92,11 @@ export default function Polls({ me }: { me: Player }) {
                   key={o.id}
                   onClick={() => vote.mutate({ pollId: p.id, optionId: o.id })}
                   className={`relative mt-2 block w-full overflow-hidden rounded-lg border p-2 text-left text-sm ${
-                    mine ? 'border-emerald-700' : 'border-emerald-200'
+                    mine ? 'border-brand-700' : 'border-brand-200'
                   }`}
                 >
                   <span
-                    className="absolute inset-y-0 left-0 bg-emerald-100"
+                    className="absolute inset-y-0 left-0 bg-brand-100"
                     style={{ width: `${pct}%` }}
                   />
                   <span className="relative flex justify-between">
@@ -144,7 +144,7 @@ export default function Polls({ me }: { me: Player }) {
           {options.length < 6 && (
             <button
               onClick={() => setOptions((os) => [...os, ''])}
-              className="mt-2 text-sm text-emerald-800 underline"
+              className="mt-2 text-sm text-brand-800 underline"
             >
               + Add option
             </button>
@@ -153,7 +153,7 @@ export default function Polls({ me }: { me: Player }) {
             <button
               onClick={() => create.mutate()}
               disabled={!question.trim() || create.isPending}
-              className="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+              className="rounded-lg bg-brand-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
             >
               Create poll
             </button>
@@ -165,7 +165,7 @@ export default function Polls({ me }: { me: Player }) {
       ) : (
         <button
           onClick={() => setCreating(true)}
-          className="rounded-lg border border-emerald-300 px-4 py-2 text-sm font-semibold text-emerald-900"
+          className="rounded-lg border border-brand-300 px-4 py-2 text-sm font-semibold text-brand-900"
         >
           + New poll
         </button>

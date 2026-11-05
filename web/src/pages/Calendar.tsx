@@ -146,7 +146,7 @@ export default function Calendar({ me }: { me: Player }) {
               </span>
               <span
                 className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                  tables > 0 ? 'bg-emerald-700 text-white' : 'bg-slate-100 text-slate-600'
+                  tables > 0 ? 'bg-brand-700 text-white' : 'bg-slate-100 text-slate-600'
                 }`}
               >
                 {tables > 0
@@ -184,8 +184,8 @@ export default function Calendar({ me }: { me: Player }) {
               onClick={() => toggle.mutate({ day: key, available: !mine })}
               className={`mt-2 w-full rounded-lg p-2 text-sm font-semibold ${
                 mine
-                  ? 'bg-emerald-800 text-white'
-                  : 'border border-emerald-300 text-emerald-900'
+                  ? 'bg-brand-800 text-white'
+                  : 'border border-brand-300 text-brand-900'
               }`}
             >
               {mine ? "✓ I'm free (tap to undo)" : "I'm free"}
@@ -199,7 +199,7 @@ export default function Calendar({ me }: { me: Player }) {
                     onChange={(e) => setTitle(e.target.value)}
                     maxLength={80}
                     placeholder="e.g. Hosting at my place, 7pm"
-                    className="w-full rounded-lg border border-emerald-300 p-2 text-sm"
+                    className="w-full rounded-lg border border-brand-300 p-2 text-sm"
                   />
                   <div className="mt-2 flex gap-2">
                     <button

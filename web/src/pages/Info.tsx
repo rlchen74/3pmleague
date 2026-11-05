@@ -60,14 +60,14 @@ export default function Info({
         <p className="mb-2 text-sm text-slate-600">
           Pick a tile to show next to your name.
         </p>
-        <div className="grid grid-cols-6 gap-1 rounded-lg bg-white p-2 shadow sm:grid-cols-8">
+        <div className="grid grid-cols-5 gap-1 rounded-lg bg-white p-2 shadow sm:grid-cols-8">
             {TILES.map((t) => (
                 <button
                 key={t}
                 onClick={() => setTile.mutate(t)}
                 aria-label="Choose tile"
-                className={`rounded p-1 text-3xl leading-none ${
-                    me.tile === t ? 'bg-emerald-200 ring-2 ring-emerald-700' : ''
+                className={`rounded p-1 text-5xl leading-none ${
+                    me.tile === t ? 'bg-brand-200 ring-2 ring-brand-700' : ''
                 }`}
                 >
                     <Tile t={t} />

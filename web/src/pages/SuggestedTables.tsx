@@ -45,7 +45,7 @@ export default function SuggestedTables({ weekStart, me }: { weekStart: string; 
           <div
             key={i}
             className={`mb-2 rounded-lg p-3 shadow ${
-              mine ? 'bg-emerald-700 text-white' : 'bg-white'
+              mine ? 'bg-brand-700 text-white' : 'bg-white'
             }`}
           >
             <p className="font-semibold">{dayLabel(t.day)}</p>

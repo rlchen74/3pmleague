@@ -39,12 +39,12 @@ export default function Login({ onLogin }: { onLogin: (p: Player) => void }) {
 }
 
   return (
-    <div className="w-full max-w-sm rounded-xl bg-white p-6 text-emerald-950 shadow-lg">
+    <div className="w-full max-w-sm rounded-xl bg-white p-6 text-brand-950 shadow-lg">
       <h2 className="text-xl font-bold">Who are you?</h2>
       <select
         value={playerId}
         onChange={(e) => setPlayerId(e.target.value)}
-        className="mt-4 w-full rounded-lg border border-emerald-300 p-3"
+        className="mt-4 w-full rounded-lg border border-brand-300 p-3"
       >
         <option value="">Select your name...</option>
         {names.map((n) => (
@@ -66,7 +66,7 @@ export default function Login({ onLogin }: { onLogin: (p: Player) => void }) {
       <button
         onClick={submit}
         disabled={!playerId || !token || busy}
-        className="mt-4 w-full rounded-lg bg-emerald-800 p-3 font-semibold text-white disabled:opacity-40"
+        className="mt-4 w-full rounded-lg bg-brand-800 p-3 font-semibold text-white disabled:opacity-40"
       >
         {busy ? 'Entering...' : 'Enter'}
       </button>

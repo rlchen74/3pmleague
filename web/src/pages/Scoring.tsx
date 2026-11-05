@@ -13,7 +13,7 @@ type RecentGame = {
 }
 
 const blank = (): Row => ({ playerId: '', score: '', wins: '0', bestHand: '0', counts: true })
-const field = 'w-full rounded-lg border border-emerald-300 bg-white p-2'
+const field = 'w-full rounded-lg border border-brand-300 bg-white p-2'
 
 export default function Scoring({ me }: { me: Player }) {
   const qc = useQueryClient()
@@ -108,7 +108,7 @@ export default function Scoring({ me }: { me: Player }) {
       <button
         onClick={() => save.mutate()}
         disabled={!ready || save.isPending}
-        className="mt-4 w-full rounded-lg bg-emerald-800 p-3 font-semibold text-white disabled:opacity-40"
+        className="mt-4 w-full rounded-lg bg-brand-800 p-3 font-semibold text-white disabled:opacity-40"
       >
         {save.isPending ? 'Saving...' : 'Submit game'}
       </button>
