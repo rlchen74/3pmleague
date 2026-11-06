@@ -142,7 +142,7 @@ export default function Calendar({ me }: { me: Player }) {
     <div>
       <h1 className="mb-1 text-2xl font-bold">Calendar</h1>
       <p className="mb-3 text-sm text-slate-600">
-        Everyone counts as free unless they mark a day off. Tap the days you can't play.
+        Tap the calendar days you are out of town, busy, or otherwise can't play.
       </p>
 
       <p className="mb-1 text-xs text-slate-600">Suggestions for the week of {weekLabel}</p>

@@ -134,8 +134,8 @@ export default function Info({
       )}
 
       <section className="mb-8">
-        <h2 className="mb-1 text-2xl font-bold">Your profile</h2>
-        <p className="mb-2 text-sm text-slate-600">Pick a tile to show next to your name.</p>
+        <h2 className="mb-1 text-2xl font-bold">Tile Avatar</h2>
+        <p className="mb-2 text-sm text-slate-600">Pick your favorite tile! or least fav if u r a hater</p>
         <div className="grid grid-cols-5 gap-1 rounded-lg bg-white p-2 shadow sm:grid-cols-8">
           {TILES.map((t) => (
             <button

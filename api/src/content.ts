@@ -8,13 +8,14 @@ export const router = Router()
 
 // Shown until an admin saves their own text
 const DEFAULTS: Record<string, string> = {
-  rules: `We play Hong Kong mahjong with the league house rules.
-Each player plays 5 league games, always against opponents they have not faced.
-Every winning hand must be worth at least 3 faan.
-A winner scores 2 x faan - 3 points. A deal-in loses 3. On a self-draw, each other player loses 2. A draw changes nothing.
-Report scores on the Scoring tab right after your game.`,
-  info: `Organizer: add your name and contact here.
-Games are self-scheduled. Use the Calendar tab to find players and tables.`,
+  rules: `Season 0: November 4 - December 31st
+Hong Kong style mahjong! Hands are scored with standard rules and 3 faan minimum (see mahjongscoring.net) and converted to points for the leaderboard.
+A winner scores ((2 x faan) - 3) points. A deal-in loses 3. On a self-draw, each other player loses 2. On a draw, no one wins! :)
+Each player plays 5 league games, always against opponents they have not faced (there will be a few games where we may have to overlap, TBD).
+Buy-in is $20, with the grand prize being a nice lil mahjong set (details TBD). Fee is not due till season end.
+Report scores on the Scoring tab right after your game.
+Games are self-scheduled!!! Use the Calendar tab to find matchup and table suggestions. To make things easier, you can also block out days on the Calendar that you are out-of-town/busy.`,
+  info: `Commissioners: Robert Chen (2172812931), Alex Kim (8182539546). Please contact with any questions, issues, interpersonal conflict resolution, or life advice.`,
 }
 
 router.get('/content', requireLogin, async (_req, res) => {

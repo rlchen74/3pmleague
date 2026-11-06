@@ -215,7 +215,7 @@ export default function Scoring({ me }: { me: Player }) {
       <p className="mb-3 text-sm text-slate-600">
         Every winning hand must be worth at least {FAAN_MIN} faan. Winner scores 2 × faan − 3. A
         deal-in loses {DEAL_IN_PENALTY}. On a self-draw, each other player loses {SELF_DRAW_PENALTY}.
-        A draw changes nothing.
+        Points do not change on a draw.
       </p>
 
       <label className="block text-sm font-semibold">

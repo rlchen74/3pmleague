@@ -14,7 +14,7 @@ I built it end to end (design, data model, API, frontend, CI, deployment) both t
 - **Calendar:** monthly view where everyone counts as free unless they mark a day off, with events such as ‘hosting’ and live counts of how many tables each day could support
 - **Suggested tables:** a pairing algorithm proposes tables for the week from availability and head-to-head history - suggestions are per player: up to three non-overlapping tables chosen at random with a seeded generator, so they stay stable until availability changes or the player asks for new ones
 - **Scoring:** enter a four-player game as eight hands (winner, self-draw or deal-in, and faan), with points computed automatically
-- **Standings:** computed from stored game results (points, games played, average, wins, deal-ins)
+- **Standings:** computed from stored game results (points, games played, average, wins, deal-ins) - able to separate standings by season and access old archived seasons 
 - Mobile-first layout, no installation required
 
 ## Tech stack
@@ -58,6 +58,7 @@ erDiagram
   polls ||--|{ poll_options : has
   polls ||--o{ poll_votes : receives
   players ||--o{ poll_votes : casts
+  seasons ||--o{ games : contains
 ```
 
 ## Design decisions worth noting

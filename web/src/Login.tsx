@@ -40,7 +40,7 @@ export default function Login({ onLogin }: { onLogin: (p: Player) => void }) {
 
   return (
     <div className="w-full max-w-sm rounded-xl bg-white p-6 text-brand-950 shadow-lg">
-      <h2 className="text-xl font-bold">Who are you?</h2>
+      <h2 className="text-xl font-bold">Select yourself:</h2>
       <select
         value={playerId}
         onChange={(e) => setPlayerId(e.target.value)}

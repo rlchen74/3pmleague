@@ -33,8 +33,7 @@ export default function SuggestedTables({ weekStart, me }: { weekStart: string; 
     <section className="mb-5">
       <h2 className="text-xl font-bold">Tables for you</h2>
       <p className="mb-3 text-sm text-slate-600">
-        Games you could set up this week with players you haven't faced yet. Each table has
-        different people, so pick one and message them.
+        Games you could set up this week with players you haven't faced yet. Don't be shy and reach out!!!! 
       </p>
 
       {isLoading && <p>Working out matchups...</p>}
