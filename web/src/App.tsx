@@ -49,7 +49,7 @@ async function logout() {
           {player.tile && (
             <Tile
               t={player.tile}
-              className="inline-block rounded-md bg-brand-50 px-1 text-4xl leading-none text-brand-900"
+              className="inline-block shrink-0 rounded-md bg-brand-50 px-1 text-4xl leading-none text-brand-900"
             />
           )}
           <span className="text-left leading-tight">

@@ -66,12 +66,12 @@ export default function Standings() {
             {data.map((r, i) => (
               <tr key={r.id} className="border-t border-brand-100">
                 <td className="p-3">{i + 1}</td>
-                <td className="p-3 font-semibold">
+                <td className="min-w-[8rem] p-3 font-semibold">
                   <span className="flex items-center gap-2">
                     {r.tile && (
-                      <Tile t={r.tile} className="text-4xl leading-none text-brand-900" />
+                      <Tile t={r.tile} className="shrink-0 text-4xl leading-none text-brand-900" />
                     )}
-                    {r.firstName}
+                    <span className="min-w-0 break-words">{r.firstName}</span>
                   </span>
                 </td>
                 <td className="p-3 text-right font-bold">{r.points}</td>
