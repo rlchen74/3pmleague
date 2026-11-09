@@ -16,6 +16,12 @@ Buy-in is $20, with the grand prize being a nice lil mahjong set (details TBD). 
 Report scores on the Scoring tab right after your game.
 Games are self-scheduled!!! Use the Calendar tab to find matchup and table suggestions. To make things easier, you can also block out days on the Calendar that you are out-of-town/busy.`,
   info: `Commissioners: Robert Chen (2172812931), Alex Kim (8182539546). Please contact with any questions, issues, interpersonal conflict resolution, or life advice.`,
+    etiquette: `Be considerate of other ppl's time! 
+you Have to call your chow/pung before the next person looks at the tile! strictly enforced and worst offender will be hunted down and given a talking to  
+everyone gets one tile topple/blunder/etc per game - any successive mistakes will be added to a Wall Of Shame and penalized (TBD)
+if you truly call false mahjong and reveal your hand you are Penalized 7 Points!!!!! this applies to both not having mahjong and a hand with less than 3 Faan. If you call it but immediately realize your error before showing, you are fine but everyone only gets one 
+Any particular situations not covered here will be up to commissioner discretion purple devil with horns emoji
+`,
 }
 
 router.get('/content', requireLogin, async (_req, res) => {

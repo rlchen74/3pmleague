@@ -50,6 +50,13 @@
       "when": 1793918867999,
       "tag": "0006_gorgeous_junta",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794257443496,
+      "tag": "0007_curly_wilson_fisk",
+      "breakpoints": true
     }
   ]
 }

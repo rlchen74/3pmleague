@@ -15,6 +15,7 @@ import { router as profileRouter } from './profile.js'
 import { router as contentRouter } from './content.js'
 import { router as adminRouter } from './admin.js'
 import { router as seasonsRouter } from './seasons.js'
+import { router as draftsRouter } from './drafts.js'
 import { loginSchema } from '../../shared/schemas.js'
 
 const sessionSecret = process.env.SESSION_SECRET
@@ -106,6 +107,8 @@ app.use('/api', profileRouter)
 app.use('/api', contentRouter)
 app.use('/api', adminRouter)
 app.use('/api', seasonsRouter)
+app.use('/api', draftsRouter)
+
 
 const port = Number(process.env.PORT) || 3001
 app.listen(port, () => {

@@ -34,7 +34,7 @@ export default function Calendar({ me }: { me: Player }) {
   const inWindow = (key: string) => key >= todayKey && key <= lastKey
 
   const [monthOffset, setMonthOffset] = useState(0)
-  const [mode, setMode] = useState<'mark' | 'view'>('mark')
+  const [mode, setMode] = useState<'mark' | 'view'>('view')
   const [selected, setSelected] = useState(todayKey)
   const [adding, setAdding] = useState(false)
   const [title, setTitle] = useState('')
@@ -142,7 +142,7 @@ export default function Calendar({ me }: { me: Player }) {
     <div>
       <h1 className="mb-1 text-2xl font-bold">Calendar</h1>
       <p className="mb-3 text-sm text-slate-600">
-        Tap the calendar days you are out of town, busy, or otherwise can't play.
+        Switch to "Mark days I can't make", and tap the calendar days you are out of town, busy, or otherwise can't play.
       </p>
 
       <p className="mb-1 text-xs text-slate-600">Suggestions for the week of {weekLabel}</p>
@@ -169,7 +169,7 @@ export default function Calendar({ me }: { me: Player }) {
       </div>
 
       <div className="mb-2 grid grid-cols-2 gap-1 rounded-lg bg-brand-100 p-1 text-sm font-semibold">
-        {(['mark', 'view'] as const).map((m) => (
+        {(['view', 'mark'] as const).map((m) => (
           <button
             key={m}
             onClick={() => setMode(m)}
