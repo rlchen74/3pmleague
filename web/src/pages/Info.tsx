@@ -7,7 +7,7 @@ import { contentSchema, parseOrThrow } from '../../../shared/schemas'
 import Polls from './Polls'
 import Admin from './Admin'
 
-type Content = { rules: string; info: string }
+type Content = { rules: string; info: string; etiquette: string }
 
 function ContentBlock({
   k,
@@ -16,7 +16,7 @@ function ContentBlock({
   text,
   canEdit,
 }: {
-  k: 'rules' | 'info'
+  k: 'rules' | 'info' | 'etiquette'
   title: string
   ordered: boolean
   text: string
@@ -159,7 +159,15 @@ export default function Info({
           </button>
         )}
       </section>
-
+      {content && (
+        <ContentBlock
+          k="etiquette"
+          title="Etiquette"
+          ordered={false}
+          text={content.etiquette ?? ''}
+          canEdit={me.isAdmin}
+        />
+      )}
       {me.isAdmin && <Admin />}
     </div>
   )

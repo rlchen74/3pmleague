@@ -167,7 +167,7 @@ export function parseOrThrow<S extends z.ZodType>(schema: S, data: unknown): z.i
 }
 
 export const contentSchema = z.object({
-  key: z.enum(['rules', 'info']),
+  key: z.enum(['rules', 'info', 'etiquette']),
   body: z.string().trim().max(5000, 'Keep it under 5000 characters'),
 })
 
@@ -180,3 +180,22 @@ export const activeSchema = z.object({ isActive: z.boolean() })
 export const newSeasonSchema = z.object({
   name: z.string().trim().min(1, 'Name the season').max(40, 'Keep it under 40 characters'),
 })
+
+export const MAX_DRAFTS = 5
+
+// A game in progress: the scoring form exactly as the player has filled it in so far
+export const draftSchema = z.object({
+  playedOn: z.string().max(10),
+  players: z.array(z.object({ playerId: z.string().max(10), counts: z.boolean() })).length(4),
+  hands: z
+    .array(
+      z.object({
+        winner: z.string().max(10),
+        selfDraw: z.boolean(),
+        discarder: z.string().max(10),
+        faan: z.string().max(3),
+      }),
+    )
+    .length(HANDS_PER_GAME),
+})
+export type DraftData = z.infer<typeof draftSchema>

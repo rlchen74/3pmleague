@@ -139,3 +139,12 @@ export const siteContent = pgTable('site_content', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
   updatedBy: integer('updated_by').references(() => players.id, { onDelete: 'set null' }),
 })
+
+export const gameDrafts = pgTable('game_drafts', {
+  id: serial('id').primaryKey(),
+  ownerId: integer('owner_id')
+    .notNull()
+    .references(() => players.id, { onDelete: 'cascade' }),
+  data: text('data').notNull(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})

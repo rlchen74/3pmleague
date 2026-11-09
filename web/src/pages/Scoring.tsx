@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api'
 import type { Player } from '../Login'
@@ -12,10 +12,12 @@ import {
   DEAL_IN_PENALTY,
   SELF_DRAW_PENALTY,
   type HandInput,
+  type DraftData,
 } from '../../../shared/schemas'
 
 type Slot = { playerId: string; counts: boolean }
 type HandRow = { winner: string; selfDraw: boolean; discarder: string; faan: string }
+type DraftRow = { id: number; updatedAt: string; data: DraftData }
 type RecentGame = {
   id: number
   playedOn: string
@@ -39,6 +41,7 @@ const blankSlot = (): Slot => ({ playerId: '', counts: true })
 const blankHand = (): HandRow => ({ winner: '', selfDraw: false, discarder: '', faan: '' })
 const field = 'w-full rounded-lg border border-brand-300 bg-white p-2 disabled:opacity-50'
 const today = () => new Date().toLocaleDateString('en-CA')
+const JSON_HEADERS = { 'Content-Type': 'application/json' }
 
 const toHand = (r: HandRow): HandInput =>
   r.winner === 'draw'
@@ -70,11 +73,29 @@ export default function Scoring({ me }: { me: Player }) {
     queryKey: ['games'],
     queryFn: () => api<RecentGame[]>('/api/games'),
   })
+  const { data: drafts = [] } = useQuery({
+    queryKey: ['drafts'],
+    queryFn: () => api<DraftRow[]>('/api/drafts'),
+  })
+
   const [editingId, setEditingId] = useState<number | null>(null)
+  const [draftId, setDraftId] = useState<number | null>(null)
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [saveNote, setSaveNote] = useState('')
   const [playedOn, setPlayedOn] = useState(today())
   const [slots, setSlots] = useState<Slot[]>([blankSlot(), blankSlot(), blankSlot(), blankSlot()])
   const [rows, setRows] = useState<HandRow[]>(Array.from({ length: HANDS_PER_GAME }, blankHand))
   const [error, setError] = useState('')
+
+  // Refs let the auto-save see the latest form without re-running on every keystroke
+  const draftIdRef = useRef<number | null>(null)
+  const inFlight = useRef(false)
+  const dirty = useRef(false)
+  const latest = useRef<{ playedOn: string; slots: Slot[]; rows: HandRow[] }>({
+    playedOn: '',
+    slots: [],
+    rows: [],
+  })
 
   const nameOf = (id: string | number) => names.find((n) => n.id === Number(id))?.firstName ?? '?'
   const chosen = slots.map((s) => s.playerId).filter(Boolean)
@@ -96,6 +117,64 @@ export default function Scoring({ me }: { me: Player }) {
     }
   }
 
+  // Save the form as a draft. Saves never overlap: if one is running, the next waits for it.
+  async function persist(): Promise<void> {
+    if (inFlight.current) {
+      dirty.current = true
+      return
+    }
+    inFlight.current = true
+    setSaveState('saving')
+    try {
+      const cur = latest.current
+      const body = JSON.stringify({ playedOn: cur.playedOn, players: cur.slots, hands: cur.rows })
+      if (draftIdRef.current) {
+        await api(`/api/drafts/${draftIdRef.current}`, {
+          method: 'PUT',
+          headers: JSON_HEADERS,
+          body,
+        })
+      } else {
+        const created = await api<{ id: number }>('/api/drafts', {
+          method: 'POST',
+          headers: JSON_HEADERS,
+          body,
+        })
+        draftIdRef.current = created.id
+        setDraftId(created.id)
+        qc.invalidateQueries({ queryKey: ['drafts'] })
+      }
+      setSaveState('saved')
+      setSaveNote('')
+    } catch (e) {
+      if (draftIdRef.current && (e as Error).message === 'Draft not found') {
+        // The draft was deleted somewhere else, so start a fresh one on the next save
+        draftIdRef.current = null
+        setDraftId(null)
+        dirty.current = true
+      } else {
+        setSaveState('error')
+        setSaveNote((e as Error).message)
+      }
+    } finally {
+      inFlight.current = false
+      if (dirty.current) {
+        dirty.current = false
+        void persist()
+      }
+    }
+  }
+
+  // Auto-save about a second after the form stops changing
+  useEffect(() => {
+    latest.current = { playedOn, slots, rows }
+    if (editingId !== null) return undefined
+    const blank = slots.every((s) => !s.playerId) && rows.every((r) => r.winner === '')
+    if (blank && draftIdRef.current === null) return undefined
+    const t = setTimeout(() => void persist(), 1200)
+    return () => clearTimeout(t)
+  }, [playedOn, slots, rows, editingId])
+
   const setSlot = (i: number, patch: Partial<Slot>) =>
     setSlots((ss) => ss.map((s, j) => (j === i ? { ...s, ...patch } : s)))
   const setHand = (i: number, patch: Partial<HandRow>) =>
@@ -103,6 +182,10 @@ export default function Scoring({ me }: { me: Player }) {
 
   function resetForm() {
     setEditingId(null)
+    draftIdRef.current = null
+    setDraftId(null)
+    setSaveState('idle')
+    setSaveNote('')
     setPlayedOn(today())
     setSlots([blankSlot(), blankSlot(), blankSlot(), blankSlot()])
     setRows(Array.from({ length: HANDS_PER_GAME }, blankHand))
@@ -110,6 +193,9 @@ export default function Scoring({ me }: { me: Player }) {
   }
 
   function startEdit(g: RecentGame) {
+    draftIdRef.current = null
+    setDraftId(null)
+    setSaveState('idle')
     setEditingId(g.id)
     setPlayedOn(g.playedOn)
     setSlots(
@@ -128,6 +214,19 @@ export default function Scoring({ me }: { me: Player }) {
         }
       }),
     )
+    setError('')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function resumeDraft(d: DraftRow) {
+    setEditingId(null)
+    draftIdRef.current = d.id
+    setDraftId(d.id)
+    setSaveState('saved')
+    setSaveNote('')
+    setPlayedOn(d.data.playedOn || today())
+    setSlots(Array.from({ length: 4 }, (_, i) => d.data.players[i] ?? blankSlot()))
+    setRows(Array.from({ length: HANDS_PER_GAME }, (_, i) => d.data.hands[i] ?? blankHand()))
     setError('')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -173,13 +272,20 @@ export default function Scoring({ me }: { me: Player }) {
       })
       return api(editingId ? `/api/games/${editingId}` : '/api/games', {
         method: editingId ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: JSON_HEADERS,
         body: JSON.stringify(payload),
       })
     },
     onSuccess: () => {
+      // The finished game replaces its draft
+      const finishedDraft = draftIdRef.current
       resetForm()
       refresh()
+      if (finishedDraft) {
+        api(`/api/drafts/${finishedDraft}`, { method: 'DELETE' }).finally(() =>
+          qc.invalidateQueries({ queryKey: ['drafts'] }),
+        )
+      }
     },
     onError: (e: Error) => setError(e.message),
   })
@@ -193,12 +299,32 @@ export default function Scoring({ me }: { me: Player }) {
     onError: (e: Error) => setError(e.message),
   })
 
+  const discard = useMutation({
+    mutationFn: (id: number) => api(`/api/drafts/${id}`, { method: 'DELETE' }),
+    onSuccess: (_d, id) => {
+      if (id === draftIdRef.current) resetForm()
+      qc.invalidateQueries({ queryKey: ['drafts'] })
+    },
+    onError: (e: Error) => setError(e.message),
+  })
+
   const ready = allPicked && rows.every((r) => r.winner !== '')
+  const openDrafts = drafts.filter((d) => d.id !== draftId)
 
   const describe = (g: RecentGame, h: RecentGame['hands'][number]) => {
     const n = (id: number | null) => g.results.find((r) => r.playerId === id)?.firstName ?? '?'
     if (h.winnerId === null) return 'Draw'
     return `${n(h.winnerId)} won ${h.faan} faan, ${h.selfDraw ? 'self-draw' : `dealt in by ${n(h.discarderId)}`}`
+  }
+
+  const summarize = (d: DraftData) => {
+    const who =
+      d.players
+        .filter((p) => p.playerId)
+        .map((p) => nameOf(p.playerId))
+        .join(', ') || 'No players yet'
+    const done = d.hands.filter((h) => h.winner !== '').length
+    return `${who} · ${done}/${HANDS_PER_GAME} hands`
   }
 
   return (
@@ -215,8 +341,50 @@ export default function Scoring({ me }: { me: Player }) {
       <p className="mb-3 text-sm text-slate-600">
         Every winning hand must be worth at least {FAAN_MIN} faan. Winner scores 2 × faan − 3. A
         deal-in loses {DEAL_IN_PENALTY}. On a self-draw, each other player loses {SELF_DRAW_PENALTY}.
-        Points do not change on a draw.
+        A draw changes nothing. Your progress saves automatically as you go.
       </p>
+
+      {!editingId && openDrafts.length > 0 && (
+        <div className="mb-4 rounded-lg bg-brand-100 p-3">
+          <p className="mb-1 text-sm font-bold">Games in progress</p>
+          {openDrafts.map((d) => (
+            <div
+              key={d.id}
+              className="flex items-center justify-between gap-2 border-t border-brand-200 py-2 first:border-t-0"
+            >
+              <span className="text-sm">{summarize(d.data)}</span>
+              <span className="flex shrink-0 gap-3 text-sm">
+                <button onClick={() => resumeDraft(d)} className="font-semibold text-brand-800 underline">
+                  Resume
+                </button>
+                <button
+                  onClick={() => confirm('Discard this game in progress?') && discard.mutate(d.id)}
+                  className="text-red-700 underline"
+                >
+                  Discard
+                </button>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!editingId && (draftId !== null || saveState !== 'idle') && (
+        <div className="mb-3 flex items-center justify-between gap-2 text-xs">
+          <span className={saveState === 'error' ? 'text-red-700' : 'text-slate-600'}>
+            {saveState === 'saving'
+              ? 'Saving progress...'
+              : saveState === 'error'
+                ? `Couldn't save progress: ${saveNote}`
+                : 'Progress saved. You can leave and come back to this game.'}
+          </span>
+          {draftId !== null && (
+            <button onClick={resetForm} className="shrink-0 font-semibold text-brand-800 underline">
+              Start a different game
+            </button>
+          )}
+        </div>
+      )}
 
       <label className="block text-sm font-semibold">
         Date played
@@ -244,6 +412,25 @@ export default function Scoring({ me }: { me: Player }) {
           </label>
         </div>
       ))}
+
+      {allPicked && (
+        <div className="mt-4 rounded-lg bg-brand-100 sticky top-0 z-10 p-3">
+          <p className="mb-2 text-sm font-semibold">Running totals (completed hands)</p>
+          <div className="grid grid-cols-4 gap-2 text-center">
+            {slots.map((s, k) => (
+              <div key={s.playerId} className="rounded-lg bg-white p-2 shadow">
+                <p className="truncate text-xs font-semibold">{nameOf(s.playerId)}</p>
+                <p
+                  className={`text-xl font-extrabold ${totals[k] < 0 ? 'text-red-700' : 'text-brand-800'}`}
+                >
+                  {totals[k] > 0 ? '+' : ''}
+                  {totals[k]}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <h2 className="mb-1 mt-5 text-lg font-bold">Hands</h2>
       {rows.map((r, i) => {
@@ -315,17 +502,6 @@ export default function Scoring({ me }: { me: Player }) {
           </div>
         )
       })}
-
-      {allPicked && (
-        <div className="mt-4 rounded-lg bg-brand-100 p-3 text-sm">
-          <p className="font-semibold">Running totals (completed hands)</p>
-          <p>
-            {slots
-              .map((s, k) => `${nameOf(s.playerId)} ${totals[k] > 0 ? '+' : ''}${totals[k]}`)
-              .join(' · ')}
-          </p>
-        </div>
-      )}
 
       {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
       <button
